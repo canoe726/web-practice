@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from 'recharts'
 import './App.css'
 
+// 전체 제품 중 몇개 제품이 검토, 제외, 등록 되었는지 현황 데이터 -> 원형 차트
+// 엑셀 불러와서 제품 브랜드 개수 데이터 등 -> 바 차트
+
 function App() {
   return (
     <div className="p-8">
