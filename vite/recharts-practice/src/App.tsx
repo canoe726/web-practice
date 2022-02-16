@@ -1,60 +1,188 @@
-import { useState } from 'react'
-import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from 'recharts'
+import { ChangeEvent, useEffect, useRef, useState } from 'react'
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts'
+import { scaleOrdinal } from 'd3-scale'
+import { schemeCategory10 } from 'd3-scale-chromatic'
 import './App.css'
 
-// 전체 제품 중 몇개 제품이 검토, 제외, 등록 되었는지 현황 데이터 -> 원형 차트
-// 엑셀 불러와서 제품 브랜드 개수 데이터 등 -> 바 차트
-
 function App() {
+  const [csvFile, setCsvFile] = useState<File | null>(null)
+  const [csvFileName, setCsvFileName] = useState<string>('')
+  const [keyArray, setKeyArray] = useState<any>(null)
+  const [csvArray, setCsvArray] = useState<any>(null)
+
+  const transpose2dArray = (arr: any[][]) =>
+    arr[0].map((_: any, colIdx: number) => arr.map((x: any[]) => x[colIdx]))
+
+  const processCSV = (str: string, delim = ',') => {
+    const colKeyArr = str.split('\n').map((item) => item.replace('\r', '').split(delim))
+    return transpose2dArray(colKeyArr.slice(0, colKeyArr.length - 1))
+  }
+
+  useEffect(() => {
+    if (csvFile) {
+      setCsvArray(null)
+      const reader = new FileReader()
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        if (e && e.target) {
+          const text = e.target.result as string
+          const result = processCSV(text)
+          let keyArr = []
+          const keys = result.slice(0, 2)
+          for (let i = 0; i < keys[0].length; i++) {
+            keyArr.push(`${keys[0][i]}-${keys[1][i]}`)
+          }
+          setKeyArray(keyArr)
+          setCsvArray(result.slice(2))
+        }
+      }
+      reader.readAsText(csvFile)
+      setCsvFileName(csvFile.name.slice(0, csvFile.name.length - 4))
+    }
+  }, [csvFile])
+
   return (
-    <div className="p-8">
-      <RenderLineChart></RenderLineChart>
+    <div className="p-4">
+      <div className="flex justify-items-center items-center">
+        <div className="text-xl mx-2 font-bold">CSV 파일 선택</div>
+        <input className="border-2 rounded-lg p-1" type="file" accept=".csv" name="csv-reader"
+          onChange={(e: ChangeEvent<HTMLInputElement>) => {
+            if (e.target.files) {
+              setCsvFile(e.target.files[0])
+            }
+          }}
+        ></input>
+      </div>
+      {csvArray && (
+        <RenderLineChart
+          title={csvFileName}
+          keys={keyArray}
+          data={csvArray}
+        ></RenderLineChart>
+      )}
     </div>
   )
 }
 
-const renderCustomAxisTick = ({ x, y, payload }: any) => {
-  let path = '';
+interface RenderLineChartProps {
+  title: string;
+  keys: string[];
+  data: any[][];
+}
 
-  switch (payload.value) {
-    case 'Page A':
-      path = 'M899.072 99.328q9.216 13.312 17.92 48.128t16.384 81.92 13.824 100.352 11.264 102.912 9.216 90.112 6.144 60.928q4.096 30.72 7.168 70.656t5.632 79.872 4.096 75.264 2.56 56.832q-13.312 16.384-30.208 25.6t-34.304 11.264-34.304-2.56-30.208-16.896q-1.024-10.24-3.584-33.28t-6.144-53.76-8.192-66.56-8.704-71.68q-11.264-83.968-23.552-184.32-7.168 37.888-11.264 74.752-4.096 31.744-6.656 66.56t-0.512 62.464q1.024 18.432 3.072 29.184t4.608 19.968 5.12 21.504 5.12 34.304 5.12 56.832 4.608 90.112q-11.264 24.576-50.688 42.496t-88.576 29.696-97.28 16.896-74.752 5.12q-18.432 0-46.08-2.56t-60.416-7.168-66.048-12.288-61.952-17.92-49.664-24.064-28.16-30.208q2.048-55.296 5.12-90.112t5.632-56.832 5.12-34.304 5.12-21.504 4.096-19.968 3.584-29.184q2.048-27.648-0.512-62.464t-6.656-66.56q-4.096-36.864-11.264-74.752-13.312 100.352-24.576 184.32-5.12 35.84-9.216 71.68t-8.192 66.56-6.656 53.76-2.56 33.28q-13.312 12.288-30.208 16.896t-34.304 2.56-33.792-11.264-29.696-25.6q0-21.504 2.048-56.832t4.096-75.264 5.632-79.872 6.656-70.656q2.048-20.48 6.144-60.928t9.728-90.112 11.776-102.912 13.824-100.352 16.384-81.92 17.92-48.128q20.48-12.288 56.32-25.6t73.216-26.624 71.168-25.088 50.176-22.016q10.24 13.312 16.896 61.44t13.312 115.712 15.36 146.432 23.04 153.6l38.912-334.848-29.696-25.6 43.008-54.272 15.36 2.048 15.36-2.048 43.008 54.272-29.696 25.6 38.912 334.848q14.336-74.752 23.04-153.6t15.36-146.432 13.312-115.712 16.896-61.44q16.384 10.24 50.176 22.016t71.168 25.088 73.216 26.624 56.32 25.6';
-      break;
-    case 'Page B':
-      path = 'M662.528 451.584q10.24 5.12 30.208 16.384t46.08 31.744 57.856 52.736 65.024 80.896 67.072 115.2 64.512 154.624q-15.36 9.216-31.232 21.504t-31.232 22.016-31.744 15.36-32.768 2.56q-44.032-9.216-78.336-8.192t-62.976 7.68-53.248 16.896-47.616 19.968-46.08 16.384-49.664 6.656q-57.344-1.024-110.592-16.896t-101.376-32.256-89.6-25.088-75.264 4.608q-20.48 8.192-41.984 1.024t-38.912-18.432q-20.48-13.312-39.936-33.792 37.888-116.736 86.016-199.68t92.672-136.704 78.848-81.408 43.52-33.792q9.216-5.12 10.24-25.088t-1.024-40.448q-3.072-24.576-9.216-54.272l-150.528-302.08 180.224-29.696q27.648 52.224 53.76 79.36t50.176 36.864 45.568 5.12 39.936-17.92q43.008-30.72 80.896-103.424l181.248 29.696q-20.48 48.128-45.056 99.328-20.48 44.032-47.616 97.28t-57.856 105.472q-12.288 34.816-13.824 57.344t1.536 36.864q4.096 16.384 12.288 25.6z';
-      break;
-    default:
-      path = '';
-  }
-
-  return (
-    <svg x={x - 12} y={y + 4} width={24} height={24} viewBox="0 0 1024 1024" fill="#666">
-      <path d={path} />
-    </svg>
-  );
-};
-
-const RenderLineChart = () => {
-  const data = [
-    {name: 'Page A', uv: 400, pv: 2400, amt: 2400},
-    {name: 'Page B', uv: 300, pv: 1800, amt: 2800},
-    {name: 'Page C', uv: 200, pv: 200, amt: 2800},
-    {name: 'Page D', uv: 400, pv: 1800, amt: 2800},
-    {name: 'Page E', uv: 700, pv: 1800, amt: 2800},
-  ]
+const RenderLineChart: React.FC<RenderLineChartProps> = ({
+  title,
+  keys,
+  data
+}) => {
+  const colors = scaleOrdinal(schemeCategory10).range();
+  const chartWrapperRef = useRef<HTMLDivElement>(null)
+  const [prevRadioSelectedIdx, setPrevRadioSelectedIdx] = useState<number>(-1)
+  const [selectedKeys, setSelectedKeys] = useState<boolean[]>(Array.from({ length: keys.length }, () => false))
+  const [filteredData, setFilteredData] = useState<{ name: string, value: any }[]>([])
+  const [selectedCellData, setSelectedCellData] = useState<any[][]>([])
 
   return (
-    <div className="flex flex-col items-center justify-items-center">
-      <h1 className="text-3xl font-bold underline text-center pb-4">
-        Line Chart
+    <div ref={chartWrapperRef} className="flex flex-col items-center justify-items-center">
+      <h1 className="text-3xl font-bold underline text-center p-4">
+        {`${title} 현황`}
       </h1>
-      <LineChart className="bg-gray-100" width={800} height={400} data={data}>
-        <Line type='monotone' dataKey='uv' stroke='#8884d8'></Line>
-        <CartesianGrid stroke="#ccc" />
-        <XAxis dataKey="name" tick={renderCustomAxisTick} />
-        <YAxis />
-        <Tooltip/>
-      </LineChart>
+      <div className="block border-2 rounded-lg w-full h-40 px-6 py-2 mb-2 overflow-y-scroll">
+        <fieldset id="filter-group">
+          {keys.map((key: string, idx: number) => {
+            return (
+              <div key={idx} className="flex items-center justify-items-center w-fit my-3">
+                <input className="w-6 h-6" type="radio" name="filter-group"
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                    selectedKeys[prevRadioSelectedIdx] = false
+                    selectedKeys[idx] = e.target.checked
+                    setSelectedKeys(selectedKeys)
+                    setPrevRadioSelectedIdx(idx)
+                    setSelectedCellData([])
+
+                    const filtered: string[] = data.map(item => item.filter((_, idx) => selectedKeys[idx])).flat()
+                    const counts: { [key: string]: number } = {}
+                    filtered.forEach((x: string) => {
+                      counts[x] = (counts[x] || 0) + 1
+                    })
+                    const sortedCounts = Object.entries(counts)
+                      .sort(([key1, value1], [key2, value2]) => {
+                        if (value1 === value2) {
+                          return key1 > key2 ? 1 : -1
+                        } else {
+                          return value1 - value2
+                        }
+                      })
+                      .reduce((r, [k, v]) => ({ ...r, [k]: v }), {});
+                    setFilteredData(Object.entries(sortedCounts).map(([key, value]) => {
+                      return {
+                        name: key,
+                        value: value
+                      }
+                    }))
+                  }}
+                ></input>
+                <div className="px-2">{key}</div>
+              </div>
+            )
+          })}
+        </fieldset>
+      </div>
+      <ResponsiveContainer width="100%" height={550}>
+        <BarChart className="bg-gray-100" data={filteredData}>
+          <CartesianGrid stroke="#ccc" strokeDasharray="3 3" />
+          <XAxis dataKey="name" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="value" fill="#82ca9d">
+            {data.map((_, index) => {
+              return <Cell key={`cell-${index}`} fill={colors[index % 10]} 
+                onClick={() => {
+                  const value = Object.values(filteredData)[index]
+                  setSelectedCellData(data.filter((item) => (item[prevRadioSelectedIdx] === value.name)))
+                }}/>
+            })}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+      {selectedCellData.length > 0 && (
+        <div className="my-4 w-full h-80 overflow-scroll">
+          <table className="relative whitespace-nowrap" cellSpacing='10' cellPadding='10'>
+            <thead className="sticky top-0">
+              <tr>
+                {keys.map((key, idx) => {
+                  return (
+                    <th key={idx} className="border-2 bg-blue-100">{key}</th>
+                  )
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {selectedCellData.map((data, dataIdx) => {
+                return (
+                  <tr key={dataIdx}>
+                    {data.map((item, itemIdx) => {
+                      return (
+                        <td key={itemIdx} className="border-2">{item}</td>
+                      )
+                    })}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
