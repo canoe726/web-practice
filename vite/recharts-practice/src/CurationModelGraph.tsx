@@ -2,17 +2,15 @@ import { ChangeEvent, useEffect, useRef, useState } from 'react'
 import {
   Bar,
   BarChart,
-  CartesianGrid,
   Cell,
   LabelList,
   Legend,
   ResponsiveContainer,
-  Text,
   Tooltip,
   XAxis,
   YAxis
 } from 'recharts'
-import { getRandomHexColors } from './utils';
+import { getRandomHexColors } from './utils'
 
 const colors = getRandomHexColors(2000);
 
@@ -85,7 +83,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const { name, value } = payload[0].payload;
     return (
-      <div className="custom-tooltip bg-slate-300/75 rounded-md p-4 font-bold">
+      <div className="custom-tooltip bg-slate-300/75 rounded-md p-4 font-bold border-2">
         <p className="label">{`name : ${name}`}</p>
         <p className="value">{`value : ${value}`}</p>
       </div>
@@ -127,6 +125,7 @@ const RenderLineChart: React.FC<RenderLineChartProps> = ({
   const [selectedKeys, setSelectedKeys] = useState<boolean[]>(Array.from({ length: keys.length }, () => false))
   const [filteredData, setFilteredData] = useState<{ name: string, value: any }[]>([])
   const [selectedCellData, setSelectedCellData] = useState<any[][]>([])
+  const [chartType, setChartType] = useState<string>('Bar')
 
   return (
     <div ref={chartWrapperRef} className="flex flex-col items-center justify-items-center">
@@ -174,24 +173,32 @@ const RenderLineChart: React.FC<RenderLineChartProps> = ({
           })}
         </fieldset>
       </div>
+      <select name="chart-type" onChange={(e) => setChartType(e.target.value)}>
+        <option value="Bar">바</option>
+        <option value="Line">선형</option>
+        <option value="Pie">원형</option>
+        <option value="RadialBar">레이더-바</option>
+      </select>
       <ResponsiveContainer width="100%" height={550} debounce={500}>
-        <BarChart className="bg-gray-100" data={filteredData} margin={{ top: 50, bottom: 10, left: 30, right: 50 }}>
-          <CartesianGrid stroke="#ccc" strokeDasharray="5" />
+        <BarChart className="bg-gray-200/30" data={filteredData} margin={{ top: 50, bottom: 10, left: 30, right: 50 }}>
           <XAxis dataKey="name" />
           <YAxis dataKey="value" />
           <Tooltip content={CustomTooltip} allowEscapeViewBox={{ x: false, y: false }} cursor={{ stroke: 'blue', strokeWidth: 1, fill: '#ffffff' }}/>
           <Legend verticalAlign='bottom' iconSize={20} payload={filteredData} content={CustomLegend}/>
-          <Bar dataKey="value" fill="#82ca9d" maxBarSize={80} animationEasing='ease-in-out'>
+          <Bar
+            onClick={(e) => {
+              setSelectedCellData(data.filter((item) => (item[prevRadioSelectedIdx] === e.name)))
+            }}
+            dataKey="value"
+            background={{ fill: '#eeeeee' }}
+            maxBarSize={80}
+            animationEasing='ease-in-out'>
             {data.map((_, index) => {
               return (
                 <Cell
                   key={`cell-${index}`}
-                  fill={colors[index]} 
-                  onClick={() => {
-                    const value = Object.values(filteredData)[index]
-                    setSelectedCellData(data.filter((item) => (item[prevRadioSelectedIdx] === value.name)))
-                  }}/>
-              )
+                  fill={colors[index]}/>
+                )
             })}
             <LabelList dataKey="value" position="top" angle={30}/>
           </Bar>
