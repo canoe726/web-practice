@@ -104,7 +104,7 @@ const CustomLegend = (props: any) => {
   } = props;
 
   return (
-    <div className="flex flex-wrap px-4 items-center justify-items-center max-h-24 overflow-y-scroll">
+    <div className="flex flex-wrap px-4 py-2 items-center justify-items-center max-h-24 overflow-y-scroll">
       {
         payload.map(({ name }, idx) => (
           <div className="flex m-2 items-center justify-items-center">
@@ -130,14 +130,14 @@ const RenderLineChart: React.FC<RenderLineChartProps> = ({
 
   return (
     <div ref={chartWrapperRef} className="flex flex-col items-center justify-items-center">
-      <h1 className="text-3xl font-bold underline text-center p-4">
+      <div className="text-2xl font-bold underline text-center p-2">
         {`${title} 현황`}
-      </h1>
-      <div className="block border-2 rounded-lg w-full h-40 px-6 py-2 mb-2 overflow-y-scroll">
-        <fieldset id="filter-group">
+      </div>
+      <div className="block border-2 rounded-lg w-full h-48 px-6 py-2 mb-2 overflow-y-scroll">
+        <fieldset id="filter-group" className="flex flex-wrap">
           {keys.map((key: string, idx: number) => {
             return (
-              <div key={idx} className="flex items-center justify-items-center w-fit my-3">
+              <div key={idx} className="flex items-center justify-items-center w-fit my-2 mx-2">
                 <input className="w-6 h-6" type="radio" name="filter-group"
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
                     selectedKeys[prevRadioSelectedIdx] = false
@@ -175,13 +175,13 @@ const RenderLineChart: React.FC<RenderLineChartProps> = ({
         </fieldset>
       </div>
       <ResponsiveContainer width="100%" height={550} debounce={500}>
-        <BarChart className="bg-gray-100" data={filteredData}>
-          <CartesianGrid stroke="#ccc" strokeDasharray="3 3" />
+        <BarChart className="bg-gray-100" data={filteredData} margin={{ top: 50, bottom: 10, left: 30, right: 50 }}>
+          <CartesianGrid stroke="#ccc" strokeDasharray="5" />
           <XAxis dataKey="name" />
-          <YAxis />
+          <YAxis dataKey="value" />
           <Tooltip content={CustomTooltip} allowEscapeViewBox={{ x: false, y: false }} cursor={{ stroke: 'blue', strokeWidth: 1, fill: '#ffffff' }}/>
           <Legend verticalAlign='bottom' iconSize={20} payload={filteredData} content={CustomLegend}/>
-          <Bar dataKey="value" fill="#82ca9d">
+          <Bar dataKey="value" fill="#82ca9d" maxBarSize={80} animationEasing='ease-in-out'>
             {data.map((_, index) => {
               return (
                 <Cell
