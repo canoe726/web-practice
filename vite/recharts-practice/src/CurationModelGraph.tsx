@@ -4,14 +4,17 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
   Legend,
   ResponsiveContainer,
+  Text,
   Tooltip,
   XAxis,
   YAxis
 } from 'recharts'
-import { scaleOrdinal } from 'd3-scale'
-import { schemeCategory10 } from 'd3-scale-chromatic'
+import { getRandomHexColors } from './utils';
+
+const colors = getRandomHexColors(2000);
 
 const CurationModelGraph = () => {
   const [csvFile, setCsvFile] = useState<File | null>(null)
@@ -78,12 +81,47 @@ interface RenderLineChartProps {
   data: any[][];
 }
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const { name, value } = payload[0].payload;
+    return (
+      <div className="custom-tooltip bg-slate-300/75 rounded-md p-4 font-bold">
+        <p className="label">{`name : ${name}`}</p>
+        <p className="value">{`value : ${value}`}</p>
+      </div>
+    );
+  }
+
+  return null;
+};
+
+const CustomLegend = (props: any) => {
+  const { payload }: {
+    payload: {
+      name: string;
+      value: any;
+    }[]
+  } = props;
+
+  return (
+    <div className="flex flex-wrap px-4 items-center justify-items-center max-h-24 overflow-y-scroll">
+      {
+        payload.map(({ name }, idx) => (
+          <div className="flex m-2 items-center justify-items-center">
+            <div className="w-4 h-4" style={{ background: `${colors[idx]}` }}></div>
+            <div className="px-2" key={`${name}`}>{name}</div>
+          </div>
+        ))
+      }
+    </div>
+  );
+}
+
 const RenderLineChart: React.FC<RenderLineChartProps> = ({
   title,
   keys,
   data
 }) => {
-  const colors = scaleOrdinal(schemeCategory10).range();
   const chartWrapperRef = useRef<HTMLDivElement>(null)
   const [prevRadioSelectedIdx, setPrevRadioSelectedIdx] = useState<number>(-1)
   const [selectedKeys, setSelectedKeys] = useState<boolean[]>(Array.from({ length: keys.length }, () => false))
@@ -136,21 +174,26 @@ const RenderLineChart: React.FC<RenderLineChartProps> = ({
           })}
         </fieldset>
       </div>
-      <ResponsiveContainer width="100%" height={550}>
+      <ResponsiveContainer width="100%" height={550} debounce={500}>
         <BarChart className="bg-gray-100" data={filteredData}>
           <CartesianGrid stroke="#ccc" strokeDasharray="3 3" />
           <XAxis dataKey="name" />
           <YAxis />
-          <Tooltip />
-          <Legend />
+          <Tooltip content={CustomTooltip} allowEscapeViewBox={{ x: false, y: false }} cursor={{ stroke: 'blue', strokeWidth: 1, fill: '#ffffff' }}/>
+          <Legend verticalAlign='bottom' iconSize={20} payload={filteredData} content={CustomLegend}/>
           <Bar dataKey="value" fill="#82ca9d">
             {data.map((_, index) => {
-              return <Cell key={`cell-${index}`} fill={colors[index % 10]} 
-                onClick={() => {
-                  const value = Object.values(filteredData)[index]
-                  setSelectedCellData(data.filter((item) => (item[prevRadioSelectedIdx] === value.name)))
-                }}/>
+              return (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={colors[index]} 
+                  onClick={() => {
+                    const value = Object.values(filteredData)[index]
+                    setSelectedCellData(data.filter((item) => (item[prevRadioSelectedIdx] === value.name)))
+                  }}/>
+              )
             })}
+            <LabelList dataKey="value" position="top" angle={30}/>
           </Bar>
         </BarChart>
       </ResponsiveContainer>

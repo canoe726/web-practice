@@ -53,11 +53,11 @@ const data: DataResult[] = [
 function App() {
   return (
     <>
-      {/* <CurationModelGraph></CurationModelGraph> */}
-      <DataTestResultGraph
+      <CurationModelGraph></CurationModelGraph>
+      {/* <DataTestResultGraph
         data={data}
         showDataKeys={['execTime', 'testResultAverage']}
-      ></DataTestResultGraph>
+      ></DataTestResultGraph> */}
     </>
   )
 }
